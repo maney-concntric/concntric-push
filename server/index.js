@@ -15,7 +15,15 @@ const PORT = process.env.PORT || 3001;
 
 const allowedOrigin = process.env.ALLOWED_ORIGIN || 'http://localhost:5173';
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' ? allowedOrigin : true,
+  origin: (origin, callback) => {
+    if (process.env.NODE_ENV !== 'production') return callback(null, true);
+    if (!origin) return callback(null, true);
+    const allowed =
+      origin === allowedOrigin ||
+      origin.endsWith('.up.railway.app') ||
+      origin.endsWith('.railway.app');
+    callback(allowed ? null : new Error('Not allowed by CORS'), allowed);
+  },
   credentials: true,
 }));
 
