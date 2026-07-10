@@ -78,10 +78,10 @@ router.post('/', requireAuth, (req, res) => {
     return res.status(403).json({ error: 'Participants cannot create meetings' });
   }
   const db = getDb();
-  const { facilitator } = req.body;
+  const { facilitator, date: bodyDate } = req.body;
   const id = uuidv4();
   const now = new Date().toISOString();
-  const date = now.slice(0, 10);
+  const date = bodyDate || now.slice(0, 10);
 
   const settingRows = db.prepare(
     'SELECT key, value FROM settings WHERE key IN (?, ?, ?)'

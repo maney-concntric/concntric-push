@@ -5,12 +5,16 @@ import { showToast } from '../components/Toast';
 import { useAuth } from '../hooks/useAuth';
 import { T, btn } from '../theme';
 
+const today = () => new Date().toISOString().slice(0, 10);
+
 export function Meetings() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [meetings, setMeetings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [showNewModal, setShowNewModal] = useState(false);
+  const [newDate, setNewDate] = useState(today());
 
   useEffect(() => {
     api.getMeetings()
@@ -31,10 +35,10 @@ export function Meetings() {
     }
   };
 
-  const handleNew = async () => {
+  const handleCreate = async () => {
     setCreating(true);
     try {
-      const meeting = await api.createMeeting(user.name);
+      const meeting = await api.createMeeting(user.name, newDate);
       navigate(`/meetings/${meeting.id}`);
     } catch (e) {
       showToast(e.message, 'error');
@@ -49,6 +53,36 @@ export function Meetings() {
 
   return (
     <div>
+      {showNewModal && (
+        <div style={styles.overlay}>
+          <div style={styles.modal}>
+            <div style={styles.modalTitle}>New Meeting</div>
+            <div style={styles.modalField}>
+              <label style={styles.modalLabel}>Meeting date</label>
+              <input
+                type="date"
+                value={newDate}
+                onChange={e => setNewDate(e.target.value)}
+                style={styles.dateInput}
+                autoFocus
+              />
+            </div>
+            <div style={styles.modalBtns}>
+              <button onClick={() => setShowNewModal(false)} style={styles.cancelBtn}>Cancel</button>
+              <button
+                onClick={handleCreate}
+                disabled={creating || !newDate}
+                style={btn.primary}
+                onMouseEnter={e => { if (!creating) e.target.style.background = T.redDark; }}
+                onMouseLeave={e => { e.target.style.background = T.red; }}
+              >
+                {creating ? 'Creating…' : 'Create Meeting'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={styles.pageHeader}>
         <div>
           <h1 style={styles.title}>Meetings</h1>
@@ -56,11 +90,12 @@ export function Meetings() {
         </div>
         {user?.role !== 'participant' && (
           <button
-            onClick={handleNew} disabled={creating} style={btn.primary}
-            onMouseEnter={e => { if (!creating) e.target.style.background = T.redDark; }}
-            onMouseLeave={e => { e.target.style.background = T.red; }}
+            onClick={() => { setNewDate(today()); setShowNewModal(true); }}
+            style={btn.primary}
+            onMouseEnter={e => e.target.style.background = T.redDark}
+            onMouseLeave={e => e.target.style.background = T.red}
           >
-            {creating ? 'Creating…' : '+ New Meeting'}
+            + New Meeting
           </button>
         )}
       </div>
@@ -77,11 +112,12 @@ export function Meetings() {
             <>
               <p style={styles.emptyText}>Start your first Leadership Tactical Meeting.</p>
               <button
-                onClick={handleNew} disabled={creating} style={btn.primary}
-                onMouseEnter={e => { if (!creating) e.target.style.background = T.redDark; }}
-                onMouseLeave={e => { e.target.style.background = T.red; }}
+                onClick={() => { setNewDate(today()); setShowNewModal(true); }}
+                style={btn.primary}
+                onMouseEnter={e => e.target.style.background = T.redDark}
+                onMouseLeave={e => e.target.style.background = T.red}
               >
-                {creating ? 'Creating…' : 'Start first meeting'}
+                Start first meeting
               </button>
             </>
           )}
@@ -124,6 +160,26 @@ export function Meetings() {
 }
 
 const styles = {
+  overlay: {
+    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+  },
+  modal: {
+    background: '#fff', borderRadius: 10, padding: '28px 32px',
+    width: 340, boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+  },
+  modalTitle: { fontSize: 17, fontWeight: 700, color: T.text, marginBottom: 20 },
+  modalField: { marginBottom: 24 },
+  modalLabel: { display: 'block', fontSize: 13, fontWeight: 500, color: T.textSecondary, marginBottom: 8 },
+  dateInput: {
+    width: '100%', padding: '9px 12px', fontSize: 14, border: `1px solid ${T.border}`,
+    borderRadius: 6, outline: 'none', boxSizing: 'border-box',
+  },
+  modalBtns: { display: 'flex', justifyContent: 'flex-end', gap: 10 },
+  cancelBtn: {
+    padding: '8px 16px', fontSize: 13, border: `1px solid ${T.border}`,
+    borderRadius: 5, background: '#fff', cursor: 'pointer', color: T.textSecondary,
+  },
   pageHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28, flexWrap: 'wrap', gap: 16 },
   title: { margin: 0, fontSize: 24, fontWeight: 700, color: T.text },
   subtitle: { margin: '4px 0 0', fontSize: 14, color: T.textSecondary },

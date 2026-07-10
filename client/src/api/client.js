@@ -58,7 +58,7 @@ export const api = {
 
   // Meetings
   getMeetings: () => request('/meetings'),
-  createMeeting: (facilitator) => request('/meetings', { method: 'POST', body: { facilitator } }),
+  createMeeting: (facilitator, date) => request('/meetings', { method: 'POST', body: { facilitator, date } }),
   getMeeting: (id) => request(`/meetings/${id}`),
   updateFacilitator: (id, facilitator) => request(`/meetings/${id}`, { method: 'PATCH', body: { facilitator } }),
   saveSection: (meetingId, key, data) => request(`/meetings/${meetingId}/sections/${key}`, { method: 'PUT', body: data }),
