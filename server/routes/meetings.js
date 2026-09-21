@@ -60,14 +60,23 @@ router.get('/', requireAuth, (req, res) => {
       ORDER BY m.date DESC, m.created_at DESC
     `).all();
   } else {
-    // participant: only assigned meetings
-    meetings = db.prepare(`
-      SELECT m.*, u.name as creator_name
-      FROM meetings m
-      LEFT JOIN users u ON u.id = m.created_by
-      JOIN meetings_participants mp ON mp.meeting_id = m.id AND mp.user_id = ?
-      ORDER BY m.date DESC, m.created_at DESC
-    `).all(req.user.id);
+    // participant: filter by meeting_access (slt, olt, or both)
+    const userRow = db.prepare('SELECT meeting_access FROM users WHERE id = ?').get(req.user.id);
+    const access = userRow?.meeting_access || 'both';
+    if (access === 'both') {
+      meetings = db.prepare(`
+        SELECT m.*, u.name as creator_name
+        FROM meetings m LEFT JOIN users u ON u.id = m.created_by
+        ORDER BY m.date DESC, m.created_at DESC
+      `).all();
+    } else {
+      meetings = db.prepare(`
+        SELECT m.*, u.name as creator_name
+        FROM meetings m LEFT JOIN users u ON u.id = m.created_by
+        WHERE m.meeting_type = ?
+        ORDER BY m.date DESC, m.created_at DESC
+      `).all(access);
+    }
   }
   res.json(meetings);
 });
@@ -96,7 +105,6 @@ router.post('/', requireAuth, (req, res) => {
     meetingSettings.olt_teams = teams.map((t, i) => ({
       key: `olt_team_${i}`,
       name: t.name,
-      owner: t.owner,
       minutes: 12,
     }));
   }
@@ -129,7 +137,6 @@ router.post('/', requireAuth, (req, res) => {
         ).all(team.id);
         const sectionData = {
           teamName: team.name,
-          owner: team.owner,
           items: templateItems.map(item => ({ id: uuidv4(), text: item.text, completed: false, notes: '' })),
           ideas: '',
           timerStarted: null,
@@ -148,10 +155,9 @@ router.post('/', requireAuth, (req, res) => {
 function canAccessMeeting(db, meeting, user) {
   if (user.role === 'admin' || user.role === 'facilitator') return true;
   if (user.role === 'participant') {
-    const assigned = db.prepare(
-      'SELECT 1 FROM meetings_participants WHERE meeting_id = ? AND user_id = ?'
-    ).get(meeting.id, user.id);
-    return !!assigned;
+    const userRow = db.prepare('SELECT meeting_access FROM users WHERE id = ?').get(user.id);
+    const access = userRow?.meeting_access || 'both';
+    return access === 'both' || access === meeting.meeting_type;
   }
   return false;
 }

@@ -41,14 +41,12 @@ export const api = {
   // Users
   getUsers: () => request('/users'),
   getStats: () => request('/users/stats'),
-  inviteUser: (name, email, role) => request('/users/invite', { method: 'POST', body: { name, email, role } }),
+  inviteUser: (name, email, role, meeting_access) => request('/users/invite', { method: 'POST', body: { name, email, role, meeting_access } }),
   editUserRole: (id, role) => request(`/users/${id}/role`, { method: 'PATCH', body: { role } }),
+  editUserAccess: (id, meeting_access) => request(`/users/${id}/meeting-access`, { method: 'PATCH', body: { meeting_access } }),
   deleteUser: (id) => request(`/users/${id}`, { method: 'DELETE' }),
   deactivateUser: (id) => request(`/users/${id}/deactivate`, { method: 'PATCH' }),
   reactivateUser: (id) => request(`/users/${id}/reactivate`, { method: 'PATCH' }),
-  getUserMeetings: (id) => request(`/users/${id}/meetings`),
-  assignMeeting: (userId, meetingId) => request(`/users/${userId}/meetings/${meetingId}`, { method: 'POST' }),
-  unassignMeeting: (userId, meetingId) => request(`/users/${userId}/meetings/${meetingId}`, { method: 'DELETE' }),
 
   // Team
   getTeam: () => request('/team'),

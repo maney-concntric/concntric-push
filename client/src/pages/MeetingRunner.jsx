@@ -232,10 +232,7 @@ export function MeetingRunner() {
         <div style={styles.sectionHeader}>
           <div>
             <h2 style={styles.sectionTitle}>{activeTab + 1}. {label}</h2>
-            {SECTIONS[activeTab].sublabel && (
-              <div style={styles.sectionOwner}>Owner: {SECTIONS[activeTab].sublabel}</div>
-            )}
-            <div style={styles.sectionMeta}>Suggested time: {minutes} minutes</div>
+<div style={styles.sectionMeta}>Suggested time: {minutes} minutes</div>
           </div>
           <div style={styles.navBtns}>
             {activeTab > 0 && (

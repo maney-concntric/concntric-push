@@ -7,7 +7,6 @@ export function AdminOltTeams() {
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [newTeamName, setNewTeamName] = useState('');
-  const [newTeamOwner, setNewTeamOwner] = useState('');
   const [addingTeam, setAddingTeam] = useState(false);
   const [editingTeam, setEditingTeam] = useState(null);
   const [expandedTeam, setExpandedTeam] = useState(null);
@@ -27,7 +26,7 @@ export function AdminOltTeams() {
     if (!newTeamName.trim()) return;
     setAddingTeam(true);
     try {
-      await api.createOltTeam(newTeamName.trim(), newTeamOwner.trim());
+      await api.createOltTeam(newTeamName.trim(), '');
       setNewTeamName(''); setNewTeamOwner('');
       showToast('Team added');
       load();
@@ -41,7 +40,7 @@ export function AdminOltTeams() {
   const handleSaveTeam = async () => {
     if (!editingTeam) return;
     try {
-      await api.updateOltTeam(editingTeam.id, { name: editingTeam.name, owner: editingTeam.owner });
+      await api.updateOltTeam(editingTeam.id, { name: editingTeam.name });
       showToast('Team updated');
       setEditingTeam(null);
       load();
@@ -117,11 +116,6 @@ export function AdminOltTeams() {
             placeholder="Team name (e.g. Sales)" required style={styles.input}
             onFocus={focusRed} onBlur={blurGray}
           />
-          <input
-            value={newTeamOwner} onChange={e => setNewTeamOwner(e.target.value)}
-            placeholder="Owner(s) (e.g. Connor)" style={styles.input}
-            onFocus={focusRed} onBlur={blurGray}
-          />
           <button
             type="submit" disabled={addingTeam} style={btn.primarySm}
             onMouseEnter={e => { if (!addingTeam) e.target.style.background = T.redDark; }}
@@ -149,20 +143,12 @@ export function AdminOltTeams() {
                       style={{ ...styles.input, flex: 1 }}
                       onFocus={focusRed} onBlur={blurGray}
                     />
-                    <input
-                      value={editingTeam.owner}
-                      onChange={e => setEditingTeam({ ...editingTeam, owner: e.target.value })}
-                      placeholder="Owner"
-                      style={{ ...styles.input, flex: 1 }}
-                      onFocus={focusRed} onBlur={blurGray}
-                    />
                     <button onClick={handleSaveTeam} style={styles.saveBtn}>Save</button>
                     <button onClick={() => setEditingTeam(null)} style={styles.cancelBtn}>Cancel</button>
                   </>
                 ) : (
                   <>
                     <div style={styles.teamName}>{team.name}</div>
-                    {team.owner && <div style={styles.teamOwner}>{team.owner}</div>}
                     <div style={styles.teamItemCount}>{team.items?.length || 0} items</div>
                     <button
                       onClick={() => setExpandedTeam(expandedTeam === team.id ? null : team.id)}
@@ -171,7 +157,7 @@ export function AdminOltTeams() {
                       {expandedTeam === team.id ? 'Hide items ▲' : 'Edit items ▼'}
                     </button>
                     <button
-                      onClick={() => setEditingTeam({ id: team.id, name: team.name, owner: team.owner || '' })}
+                      onClick={() => setEditingTeam({ id: team.id, name: team.name })}
                       style={styles.editBtn}
                     >
                       Edit

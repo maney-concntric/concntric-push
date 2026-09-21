@@ -24,14 +24,14 @@ router.get('/teams', requireAuth, (req, res) => {
 // POST /api/olt/teams (admin only)
 router.post('/teams', requireAdmin, (req, res) => {
   const db = getDb();
-  const { name, owner } = req.body;
+  const { name } = req.body;
   if (!name?.trim()) return res.status(400).json({ error: 'Name required' });
   const maxOrder = db.prepare('SELECT MAX(sort_order) as m FROM olt_teams').get();
   const sort_order = (maxOrder.m ?? -1) + 1;
   const id = uuidv4();
   db.prepare(
     'INSERT INTO olt_teams (id, name, owner, sort_order, is_active, created_at) VALUES (?, ?, ?, ?, 1, ?)'
-  ).run(id, name.trim(), owner?.trim() || '', sort_order, new Date().toISOString());
+  ).run(id, name.trim(), '', sort_order, new Date().toISOString());
   res.json(db.prepare('SELECT * FROM olt_teams WHERE id = ?').get(id));
 });
 
@@ -41,8 +41,7 @@ router.patch('/teams/:id', requireAdmin, (req, res) => {
   const team = db.prepare('SELECT * FROM olt_teams WHERE id = ?').get(req.params.id);
   if (!team) return res.status(404).json({ error: 'Not found' });
   const name = req.body.name ?? team.name;
-  const owner = req.body.owner ?? team.owner;
-  db.prepare('UPDATE olt_teams SET name = ?, owner = ? WHERE id = ?').run(name, owner, req.params.id);
+  db.prepare('UPDATE olt_teams SET name = ? WHERE id = ?').run(name, req.params.id);
   res.json({ success: true });
 });
 

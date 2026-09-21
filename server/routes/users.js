@@ -6,13 +6,14 @@ const { requireAdmin, requireAuth } = require('../middleware/auth');
 const router = express.Router();
 
 const VALID_ROLES = ['admin', 'facilitator', 'participant'];
+const VALID_ACCESS = ['slt', 'olt', 'both'];
 
 // GET /api/users — admin: all users; others: just self
 router.get('/', requireAuth, (req, res) => {
   const db = getDb();
   if (req.user.role === 'admin') {
     const users = db.prepare(`
-      SELECT id, email, name, role, is_active, created_at, last_login, invite_used
+      SELECT id, email, name, role, meeting_access, is_active, created_at, last_login, invite_used
       FROM users ORDER BY created_at ASC
     `).all();
     return res.json(users);
@@ -37,9 +38,10 @@ router.get('/stats', requireAdmin, (req, res) => {
 
 // POST /api/users/invite — admin only
 router.post('/invite', requireAdmin, (req, res) => {
-  const { email, name, role = 'facilitator' } = req.body;
+  const { email, name, role = 'facilitator', meeting_access = 'both' } = req.body;
   if (!email || !name) return res.status(400).json({ error: 'Email and name required' });
   if (!VALID_ROLES.includes(role)) return res.status(400).json({ error: 'Invalid role' });
+  if (!VALID_ACCESS.includes(meeting_access)) return res.status(400).json({ error: 'Invalid meeting_access' });
 
   const db = getDb();
   const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email.toLowerCase().trim());
@@ -49,9 +51,9 @@ router.post('/invite', requireAdmin, (req, res) => {
   const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
 
   db.prepare(`
-    INSERT INTO users (id, email, name, role, created_at, is_active, invite_token, invite_used, invite_expires_at)
-    VALUES (?, ?, ?, ?, ?, 1, ?, 0, ?)
-  `).run(uuidv4(), email.toLowerCase().trim(), name.trim(), role, new Date().toISOString(), token, expiresAt);
+    INSERT INTO users (id, email, name, role, meeting_access, created_at, is_active, invite_token, invite_used, invite_expires_at)
+    VALUES (?, ?, ?, ?, ?, ?, 1, ?, 0, ?)
+  `).run(uuidv4(), email.toLowerCase().trim(), name.trim(), role, meeting_access, new Date().toISOString(), token, expiresAt);
 
   const inviteUrl = `${process.env.ALLOWED_ORIGIN || 'http://localhost:5173'}/accept-invite/${token}`;
   res.json({ inviteUrl, expiresAt });
@@ -67,6 +69,16 @@ router.patch('/:id/role', requireAdmin, (req, res) => {
 
   const db = getDb();
   const result = db.prepare('UPDATE users SET role = ? WHERE id = ?').run(role, req.params.id);
+  if (result.changes === 0) return res.status(404).json({ error: 'User not found' });
+  res.json({ success: true });
+});
+
+// PATCH /api/users/:id/meeting-access — admin only
+router.patch('/:id/meeting-access', requireAdmin, (req, res) => {
+  const { meeting_access } = req.body;
+  if (!VALID_ACCESS.includes(meeting_access)) return res.status(400).json({ error: 'Invalid meeting_access' });
+  const db = getDb();
+  const result = db.prepare('UPDATE users SET meeting_access = ? WHERE id = ?').run(meeting_access, req.params.id);
   if (result.changes === 0) return res.status(404).json({ error: 'User not found' });
   res.json({ success: true });
 });

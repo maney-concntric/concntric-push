@@ -102,6 +102,7 @@ function initDatabase() {
   // Non-destructive migrations
   try { db.exec('ALTER TABLE meetings ADD COLUMN meeting_settings TEXT'); } catch (_) {}
   try { db.exec("ALTER TABLE meetings ADD COLUMN meeting_type TEXT NOT NULL DEFAULT 'slt'"); } catch (_) {}
+  try { db.exec("ALTER TABLE users ADD COLUMN meeting_access TEXT NOT NULL DEFAULT 'both'"); } catch (_) {}
 
   // Migrate legacy "member" role to "facilitator"
   db.prepare("UPDATE users SET role = 'facilitator' WHERE role = 'member'").run();
