@@ -14,10 +14,11 @@ export function AdminLayout() {
         <div style={styles.sidebarTitle}>Admin</div>
         <nav style={styles.nav}>
           {[
-            { to: '/admin',          label: 'Dashboard' },
-            { to: '/admin/users',    label: 'Users' },
-            { to: '/admin/team',     label: 'Team Config' },
-            { to: '/admin/settings', label: 'Meeting Configuration' },
+            { to: '/admin',           label: 'Dashboard' },
+            { to: '/admin/users',     label: 'Users' },
+            { to: '/admin/team',      label: 'SLT Team Config' },
+            { to: '/admin/olt-teams', label: 'OLT Team Config' },
+            { to: '/admin/settings',  label: 'Meeting Configuration' },
           ].map(({ to, label }) => (
             <Link
               key={to} to={to}

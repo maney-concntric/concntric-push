@@ -78,36 +78,68 @@ router.post('/', requireAuth, (req, res) => {
     return res.status(403).json({ error: 'Participants cannot create meetings' });
   }
   const db = getDb();
-  const { facilitator, date: bodyDate } = req.body;
+  const { facilitator, date: bodyDate, meeting_type } = req.body;
+  const type = meeting_type === 'olt' ? 'olt' : 'slt';
   const id = uuidv4();
   const now = new Date().toISOString();
   const date = bodyDate || now.slice(0, 10);
 
-  const settingRows = db.prepare(
-    'SELECT key, value FROM settings WHERE key IN (?, ?, ?)'
-  ).all('show_scorecard', 'show_thematic_goal', 'show_parking_lot');
-  const meetingSettings = {};
-  for (const row of settingRows) meetingSettings[row.key] = row.value === 'true';
+  let meetingSettings = {};
+
+  if (type === 'slt') {
+    const settingRows = db.prepare(
+      'SELECT key, value FROM settings WHERE key IN (?, ?, ?)'
+    ).all('show_scorecard', 'show_thematic_goal', 'show_parking_lot');
+    for (const row of settingRows) meetingSettings[row.key] = row.value === 'true';
+  } else {
+    const teams = db.prepare('SELECT * FROM olt_teams WHERE is_active = 1 ORDER BY sort_order ASC').all();
+    meetingSettings.olt_teams = teams.map((t, i) => ({
+      key: `olt_team_${i}`,
+      name: t.name,
+      owner: t.owner,
+      minutes: 12,
+    }));
+  }
 
   db.prepare(`
-    INSERT INTO meetings (id, date, facilitator, created_by, created_at, is_complete, meeting_settings)
-    VALUES (?, ?, ?, ?, ?, 0, ?)
-  `).run(id, date, facilitator || req.user.name, req.user.id, now, JSON.stringify(meetingSettings));
-
-  const teamMembers = db.prepare('SELECT * FROM team_members WHERE is_active = 1 ORDER BY sort_order ASC').all();
-  const defaults = buildDefaultSections(teamMembers);
+    INSERT INTO meetings (id, date, facilitator, created_by, created_at, is_complete, meeting_settings, meeting_type)
+    VALUES (?, ?, ?, ?, ?, 0, ?, ?)
+  `).run(id, date, facilitator || req.user.name, req.user.id, now, JSON.stringify(meetingSettings), type);
 
   const insertSection = db.prepare(`
     INSERT INTO meeting_sections (id, meeting_id, section_key, data, updated_at)
     VALUES (?, ?, ?, ?, ?)
   `);
 
-  const insertAll = db.transaction(() => {
-    for (const [key, data] of Object.entries(defaults)) {
-      insertSection.run(uuidv4(), id, key, JSON.stringify(data), now);
-    }
-  });
-  insertAll();
+  if (type === 'slt') {
+    const teamMembers = db.prepare('SELECT * FROM team_members WHERE is_active = 1 ORDER BY sort_order ASC').all();
+    const defaults = buildDefaultSections(teamMembers);
+    const insertAll = db.transaction(() => {
+      for (const [key, data] of Object.entries(defaults)) {
+        insertSection.run(uuidv4(), id, key, JSON.stringify(data), now);
+      }
+    });
+    insertAll();
+  } else {
+    const teams = db.prepare('SELECT * FROM olt_teams WHERE is_active = 1 ORDER BY sort_order ASC').all();
+    const insertAll = db.transaction(() => {
+      teams.forEach((team, i) => {
+        const templateItems = db.prepare(
+          'SELECT * FROM olt_template_items WHERE team_id = ? AND is_active = 1 ORDER BY sort_order ASC'
+        ).all(team.id);
+        const sectionData = {
+          teamName: team.name,
+          owner: team.owner,
+          items: templateItems.map(item => ({ id: uuidv4(), text: item.text, completed: false, notes: '' })),
+          ideas: '',
+          timerStarted: null,
+          timerElapsed: 0,
+        };
+        insertSection.run(uuidv4(), id, `olt_team_${i}`, JSON.stringify(sectionData), now);
+      });
+    });
+    insertAll();
+  }
 
   const meeting = db.prepare('SELECT * FROM meetings WHERE id = ?').get(id);
   res.json(meeting);

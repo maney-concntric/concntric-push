@@ -58,7 +58,7 @@ export const api = {
 
   // Meetings
   getMeetings: () => request('/meetings'),
-  createMeeting: (facilitator, date) => request('/meetings', { method: 'POST', body: { facilitator, date } }),
+  createMeeting: (facilitator, date, meeting_type) => request('/meetings', { method: 'POST', body: { facilitator, date, meeting_type } }),
   getMeeting: (id) => request(`/meetings/${id}`),
   updateFacilitator: (id, facilitator) => request(`/meetings/${id}`, { method: 'PATCH', body: { facilitator } }),
   saveSection: (meetingId, key, data) => request(`/meetings/${meetingId}/sections/${key}`, { method: 'PUT', body: data }),
@@ -68,4 +68,13 @@ export const api = {
   // Settings
   getSettings: () => request('/settings'),
   saveSettings: (data) => request('/settings', { method: 'PUT', body: data }),
+
+  // OLT Teams
+  getOltTeams: () => request('/olt/teams'),
+  createOltTeam: (name, owner) => request('/olt/teams', { method: 'POST', body: { name, owner } }),
+  updateOltTeam: (id, data) => request(`/olt/teams/${id}`, { method: 'PATCH', body: data }),
+  deleteOltTeam: (id) => request(`/olt/teams/${id}`, { method: 'DELETE' }),
+  createOltItem: (teamId, text) => request(`/olt/teams/${teamId}/items`, { method: 'POST', body: { text } }),
+  updateOltItem: (teamId, itemId, text) => request(`/olt/teams/${teamId}/items/${itemId}`, { method: 'PATCH', body: { text } }),
+  deleteOltItem: (teamId, itemId) => request(`/olt/teams/${teamId}/items/${itemId}`, { method: 'DELETE' }),
 };

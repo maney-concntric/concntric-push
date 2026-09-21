@@ -9,6 +9,7 @@ const usersRoutes = require('./routes/users');
 const meetingsRoutes = require('./routes/meetings');
 const teamRoutes = require('./routes/team');
 const settingsRoutes = require('./routes/settings');
+const oltRoutes = require('./routes/olt');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -38,6 +39,7 @@ app.use('/api/users', usersRoutes);
 app.use('/api/meetings', meetingsRoutes);
 app.use('/api/team', teamRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/olt', oltRoutes);
 
 if (process.env.NODE_ENV === 'production') {
   const distPath = path.join(__dirname, '../client/dist');

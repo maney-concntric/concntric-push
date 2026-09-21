@@ -6,7 +6,15 @@
       "Bash(node index.js)",
       "Read(//private/tmp/**)",
       "Bash(git init *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git remote *)",
+      "Bash(lsof -ti:3001,5173)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(lsof -ti:3001,5173 | xargs kill -9 2>/dev/null; sleep 1 *)",
+      "Bash(git commit -m 'Fix: trust proxy for Railway + rate limiter compatibility *)",
+      "Bash(git push *)",
+      "Bash(node -e ' *)"
     ]
   }
 }

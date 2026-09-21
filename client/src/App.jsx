@@ -10,6 +10,7 @@ import { AdminLayout, AdminDashboard } from './pages/AdminDashboard';
 import { AdminUsers } from './pages/AdminUsers';
 import { AdminTeam } from './pages/AdminTeam';
 import { AdminSettings } from './pages/AdminSettings';
+import { AdminOltTeams } from './pages/AdminOltTeams';
 
 function RequireAuth({ children }) {
   const { user, loading } = useAuth();
@@ -69,6 +70,7 @@ export default function App() {
             <Route path="users" element={<AdminUsers />} />
             <Route path="team" element={<AdminTeam />} />
             <Route path="settings" element={<AdminSettings />} />
+            <Route path="olt-teams" element={<AdminOltTeams />} />
           </Route>
 
           <Route path="/" element={<Navigate to="/meetings" replace />} />

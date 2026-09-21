@@ -15,6 +15,7 @@ export function Meetings() {
   const [creating, setCreating] = useState(false);
   const [showNewModal, setShowNewModal] = useState(false);
   const [newDate, setNewDate] = useState(today());
+  const [newType, setNewType] = useState('slt');
 
   useEffect(() => {
     api.getMeetings()
@@ -38,7 +39,7 @@ export function Meetings() {
   const handleCreate = async () => {
     setCreating(true);
     try {
-      const meeting = await api.createMeeting(user.name, newDate);
+      const meeting = await api.createMeeting(user.name, newDate, newType);
       navigate(`/meetings/${meeting.id}`);
     } catch (e) {
       showToast(e.message, 'error');
@@ -57,6 +58,20 @@ export function Meetings() {
         <div style={styles.overlay}>
           <div style={styles.modal}>
             <div style={styles.modalTitle}>New Meeting</div>
+            <div style={styles.modalField}>
+              <label style={styles.modalLabel}>Meeting type</label>
+              <div style={styles.typeToggle}>
+                {['slt', 'olt'].map(t => (
+                  <button
+                    key={t}
+                    onClick={() => setNewType(t)}
+                    style={{ ...styles.typeBtn, ...(newType === t ? styles.typeBtnActive : {}) }}
+                  >
+                    {t.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div style={styles.modalField}>
               <label style={styles.modalLabel}>Meeting date</label>
               <input
@@ -90,7 +105,7 @@ export function Meetings() {
         </div>
         {user?.role !== 'participant' && (
           <button
-            onClick={() => { setNewDate(today()); setShowNewModal(true); }}
+            onClick={() => { setNewDate(today()); setNewType('slt'); setShowNewModal(true); }}
             style={btn.primary}
             onMouseEnter={e => e.target.style.background = T.redDark}
             onMouseLeave={e => e.target.style.background = T.red}
@@ -112,7 +127,7 @@ export function Meetings() {
             <>
               <p style={styles.emptyText}>Start your first Leadership Tactical Meeting.</p>
               <button
-                onClick={() => { setNewDate(today()); setShowNewModal(true); }}
+                onClick={() => { setNewDate(today()); setNewType('slt'); setShowNewModal(true); }}
                 style={btn.primary}
                 onMouseEnter={e => e.target.style.background = T.redDark}
                 onMouseLeave={e => e.target.style.background = T.red}
@@ -134,7 +149,12 @@ export function Meetings() {
               onMouseLeave={e => e.currentTarget.style.borderColor = T.border}
             >
               <div style={styles.rowLeft}>
-                <div style={styles.dateLabel}>{formatDate(m.date)}</div>
+                <div style={styles.dateLabel}>
+                  {formatDate(m.date)}
+                  <span style={m.meeting_type === 'olt' ? styles.badgeOlt : styles.badgeSlt}>
+                    {(m.meeting_type || 'slt').toUpperCase()}
+                  </span>
+                </div>
                 <div style={styles.meta}>
                   Facilitator: {m.facilitator || '—'}
                   {m.creator_name && ` · Created by ${m.creator_name}`}
@@ -175,6 +195,13 @@ const styles = {
     width: '100%', padding: '9px 12px', fontSize: 14, border: `1px solid ${T.border}`,
     borderRadius: 6, outline: 'none', boxSizing: 'border-box',
   },
+  typeToggle: { display: 'flex', gap: 8 },
+  typeBtn: {
+    flex: 1, padding: '8px 0', fontSize: 13, fontWeight: 600, borderRadius: 6,
+    border: `1px solid ${T.border}`, background: T.white, cursor: 'pointer',
+    color: T.textSecondary, transition: 'all 0.15s',
+  },
+  typeBtnActive: { background: T.red, color: '#fff', borderColor: T.red },
   modalBtns: { display: 'flex', justifyContent: 'flex-end', gap: 10 },
   cancelBtn: {
     padding: '8px 16px', fontSize: 13, border: `1px solid ${T.border}`,
@@ -196,7 +223,15 @@ const styles = {
   },
   rowLeft: { flex: 1 },
   rowRight: { display: 'flex', alignItems: 'center', gap: 12 },
-  dateLabel: { fontSize: 15, fontWeight: 600, color: T.text },
+  dateLabel: { fontSize: 15, fontWeight: 600, color: T.text, display: 'flex', alignItems: 'center', gap: 10 },
+  badgeSlt: {
+    fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 10,
+    background: '#f0f4ff', color: '#3b5bdb', border: '1px solid #c5d0f5',
+  },
+  badgeOlt: {
+    fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 10,
+    background: '#fff7ed', color: '#c2410c', border: '1px solid #fed7aa',
+  },
   meta: { fontSize: 13, color: T.textSecondary, marginTop: 3 },
   badgeComplete: {
     fontSize: 12, fontWeight: 600, padding: '3px 10px', borderRadius: 12,

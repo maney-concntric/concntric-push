@@ -79,10 +79,29 @@ function initDatabase() {
       FOREIGN KEY (user_id) REFERENCES users(id),
       UNIQUE(meeting_id, user_id)
     );
+
+    CREATE TABLE IF NOT EXISTS olt_teams (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      owner TEXT NOT NULL DEFAULT '',
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS olt_template_items (
+      id TEXT PRIMARY KEY,
+      team_id TEXT NOT NULL,
+      text TEXT NOT NULL,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      FOREIGN KEY (team_id) REFERENCES olt_teams(id)
+    );
   `);
 
   // Non-destructive migrations
   try { db.exec('ALTER TABLE meetings ADD COLUMN meeting_settings TEXT'); } catch (_) {}
+  try { db.exec("ALTER TABLE meetings ADD COLUMN meeting_type TEXT NOT NULL DEFAULT 'slt'"); } catch (_) {}
 
   // Migrate legacy "member" role to "facilitator"
   db.prepare("UPDATE users SET role = 'facilitator' WHERE role = 'member'").run();
@@ -90,6 +109,7 @@ function initDatabase() {
   seedAdmin();
   seedTeam();
   seedSettings();
+  seedOltTeams();
 }
 
 function seedAdmin() {
@@ -150,6 +170,57 @@ function seedSettings() {
   };
   const insert = db.prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)');
   for (const [k, v] of Object.entries(defaults)) insert.run(k, v);
+}
+
+function seedOltTeams() {
+  const db = getDb();
+  const count = db.prepare('SELECT COUNT(*) as c FROM olt_teams').get();
+  if (count.c > 0) return;
+
+  const teams = [
+    { name: 'GTM Team', owner: 'Connor + Maddie', items: [
+      'Hubspot (Source of Truth) — GTM end-to-end flow setup and dashboards',
+      'Magic Funnel — Ready for Full Rollout?',
+      'Post-Event Execution & Results',
+      'GTM Ideas and Initiatives',
+    ]},
+    { name: 'Sales', owner: 'Connor', items: [
+      'Michael Lock — Fractional Role Setup',
+      'Michelle - AI BDR System - Implementation schedule',
+      'ROI Intelligence System — Training and full active use',
+      'Sales Ideas and Initiatives',
+    ]},
+    { name: 'Marketing', owner: 'Maddie', items: [
+      'H2 Events and Local Events Plan — Overview & Outcome Goals',
+      'CLC Update — Next steps after 1st meeting',
+      'Marketing Ideas and Initiatives',
+    ]},
+    { name: 'Product', owner: 'Cedric', items: [
+      'Customer Voice & Hot Demands + CS Allocation',
+      'Productize Amplify Workbooks',
+      'Get Procurement in Lead Usage Position',
+      'Product Ideas and Initiatives',
+    ]},
+    { name: 'Amplify & Training', owner: 'Brent', items: [
+      'Amplify Direction & Applications — major workflow automations',
+      'AE Training on Amplify & AI — document functionality and sales enablement',
+      'Drive Customer Team Amplify Usage',
+      'Amplify Ideas and Initiatives',
+    ]},
+  ];
+
+  const insertTeam = db.prepare('INSERT INTO olt_teams (id, name, owner, sort_order, is_active, created_at) VALUES (?, ?, ?, ?, 1, ?)');
+  const insertItem = db.prepare('INSERT INTO olt_template_items (id, team_id, text, sort_order, is_active) VALUES (?, ?, ?, ?, 1)');
+
+  const now = new Date().toISOString();
+  db.transaction(() => {
+    teams.forEach((team, ti) => {
+      const teamId = uuidv4();
+      insertTeam.run(teamId, team.name, team.owner, ti, now);
+      team.items.forEach((text, ii) => insertItem.run(uuidv4(), teamId, text, ii));
+    });
+  })();
+  console.log('✅ Default OLT teams seeded');
 }
 
 module.exports = { getDb, initDatabase };

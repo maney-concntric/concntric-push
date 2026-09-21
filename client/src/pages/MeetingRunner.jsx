@@ -11,6 +11,7 @@ import { TacticalDiscussion } from './sections/TacticalDiscussion';
 import { StrategicParkingLot } from './sections/StrategicParkingLot';
 import { ActionItems } from './sections/ActionItems';
 import { CascadingMessages } from './sections/CascadingMessages';
+import { OltTeamSection } from './sections/OltTeamSection';
 
 const ALL_SECTIONS = [
   { key: 'lightning_round',     label: 'Lightning Round',        minutes: 10, Component: LightningRound,        optional: false },
@@ -23,7 +24,18 @@ const ALL_SECTIONS = [
   { key: 'cascading_messages',  label: 'Cascading Messages',     minutes: 5,  Component: CascadingMessages,     optional: false },
 ];
 
-function buildSections(meetingSettings) {
+function buildSections(meetingSettings, meetingType) {
+  if (meetingType === 'olt') {
+    const oltTeams = meetingSettings?.olt_teams || [];
+    return oltTeams.map(t => ({
+      key: t.key,
+      label: t.name,
+      sublabel: t.owner,
+      minutes: t.minutes || 12,
+      Component: OltTeamSection,
+    }));
+  }
+
   if (!meetingSettings) return ALL_SECTIONS.map(s => ({ ...s }));
   let hidden = 0;
   const visible = ALL_SECTIONS
@@ -61,7 +73,7 @@ export function MeetingRunner() {
         setSections(m.sections || {});
         setTeamMembers(team);
         const parsed = m.meeting_settings ? JSON.parse(m.meeting_settings) : null;
-        setSECTIONS(buildSections(parsed));
+        setSECTIONS(buildSections(parsed, m.meeting_type));
       })
       .catch(e => showToast(e.message, 'error'))
       .finally(() => setLoading(false));
@@ -171,7 +183,9 @@ export function MeetingRunner() {
         <div style={styles.headerLeft}>
           <button onClick={() => navigate('/meetings')} style={styles.backBtn}>← Meetings</button>
           <div>
-            <div style={styles.meetingTitle}>Leadership Tactical Meeting — {meeting.date}</div>
+            <div style={styles.meetingTitle}>
+              {meeting.meeting_type === 'olt' ? 'OLT Meeting' : 'SLT Meeting'} — {meeting.date}
+            </div>
             <div style={styles.facilitator}>Facilitator: {meeting.facilitator}</div>
           </div>
         </div>
@@ -218,6 +232,9 @@ export function MeetingRunner() {
         <div style={styles.sectionHeader}>
           <div>
             <h2 style={styles.sectionTitle}>{activeTab + 1}. {label}</h2>
+            {SECTIONS[activeTab].sublabel && (
+              <div style={styles.sectionOwner}>Owner: {SECTIONS[activeTab].sublabel}</div>
+            )}
             <div style={styles.sectionMeta}>Suggested time: {minutes} minutes</div>
           </div>
           <div style={styles.navBtns}>
@@ -295,6 +312,7 @@ const styles = {
     marginBottom: 24, flexWrap: 'wrap', gap: 12,
   },
   sectionTitle: { margin: 0, fontSize: 20, fontWeight: 700, color: T.text },
+  sectionOwner: { fontSize: 13, color: T.textSecondary, marginTop: 3, fontWeight: 500 },
   sectionMeta: { fontSize: 12, color: '#9ca3af', marginTop: 4 },
   navBtns: { display: 'flex', gap: 8 },
   navBtn: {
